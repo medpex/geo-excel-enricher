@@ -3,23 +3,43 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Card } from '@/components/ui/card';
-import { Address, GeocodedAddress } from '@/pages/Index';
+import { Address, GeocodedAddress, LocationContext } from '@/pages/Index';
 import { geocodeAddress } from '@/utils/geocoding';
 import { Play, Pause, RotateCcw, MapPin } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { Input } from '@/components/ui/input';
+import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
 
 interface AddressProcessorProps {
   addresses: Address[];
   onProcessingComplete: (results: GeocodedAddress[]) => void;
   onStartProcessing: () => void;
   isProcessing: boolean;
+  locationContext: LocationContext;
+  onLocationContextChange: (context: LocationContext) => void;
 }
+
+// Schema für die Validierung der PLZ und Stadt
+const locationSchema = z.object({
+  postalCode: z
+    .string()
+    .min(4, { message: 'PLZ muss mindestens 4 Zeichen lang sein' })
+    .regex(/^\d+$/, { message: 'PLZ darf nur Zahlen enthalten' }),
+  city: z
+    .string()
+    .min(2, { message: 'Stadt muss mindestens 2 Zeichen lang sein' }),
+});
 
 export const AddressProcessor = ({ 
   addresses, 
   onProcessingComplete, 
   onStartProcessing,
-  isProcessing 
+  isProcessing,
+  locationContext,
+  onLocationContextChange 
 }: AddressProcessorProps) => {
   const [progress, setProgress] = useState(0);
   const [currentAddress, setCurrentAddress] = useState<string>('');
@@ -27,7 +47,39 @@ export const AddressProcessor = ({
   const [results, setResults] = useState<GeocodedAddress[]>([]);
   const { toast } = useToast();
 
+  // Form-Definition mit useForm und zod-Validierung
+  const form = useForm<z.infer<typeof locationSchema>>({
+    resolver: zodResolver(locationSchema),
+    defaultValues: {
+      postalCode: locationContext.postalCode,
+      city: locationContext.city
+    },
+  });
+
+  // Wenn sich die Formularwerte ändern, aktualisiere den Kontext
+  const handleFormChange = (values: z.infer<typeof locationSchema>) => {
+    onLocationContextChange({
+      postalCode: values.postalCode,
+      city: values.city
+    });
+  };
+
   const processAddresses = async () => {
+    // Überprüfe zuerst die Gültigkeit des Formulars
+    const formValid = await form.trigger();
+    if (!formValid) {
+      toast({
+        title: "Eingabefehler",
+        description: "Bitte geben Sie gültige PLZ und Stadt ein",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Holen Sie die aktualisierten Werte
+    const values = form.getValues();
+    const locationString = `${values.postalCode} ${values.city}`;
+
     onStartProcessing();
     setProgress(0);
     setResults([]);
@@ -39,10 +91,11 @@ export const AddressProcessor = ({
       if (isPaused) break;
       
       const address = addresses[i];
-      setCurrentAddress(address.fullAddress);
+      const fullAddressWithLocation = `${address.fullAddress}, ${locationString}, Deutschland`;
+      setCurrentAddress(fullAddressWithLocation);
       
       try {
-        const coordinates = await geocodeAddress(address.fullAddress);
+        const coordinates = await geocodeAddress(address.fullAddress, locationString);
         
         const geocodedAddress: GeocodedAddress = {
           ...address,
@@ -55,7 +108,7 @@ export const AddressProcessor = ({
         geocodedResults.push(geocodedAddress);
         setResults([...geocodedResults]);
         
-        console.log(`Geocoded: ${address.fullAddress} -> ${coordinates.latitude}, ${coordinates.longitude}`);
+        console.log(`Geocoded: ${fullAddressWithLocation} -> ${coordinates.latitude}, ${coordinates.longitude}`);
       } catch (error) {
         const geocodedAddress: GeocodedAddress = {
           ...address,
@@ -68,7 +121,7 @@ export const AddressProcessor = ({
         geocodedResults.push(geocodedAddress);
         setResults([...geocodedResults]);
         
-        console.error(`Error geocoding ${address.fullAddress}:`, error);
+        console.error(`Error geocoding ${fullAddressWithLocation}:`, error);
       }
       
       const progressPercent = ((i + 1) / addresses.length) * 100;
@@ -108,6 +161,56 @@ export const AddressProcessor = ({
 
   return (
     <div className="space-y-6">
+      <Form {...form}>
+        <form 
+          onChange={() => handleFormChange(form.getValues())}
+          className="space-y-4 mb-4"
+        >
+          <div className="grid grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="postalCode"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Postleitzahl</FormLabel>
+                  <FormControl>
+                    <Input 
+                      placeholder="z.B. 21493" 
+                      {...field} 
+                      disabled={isProcessing} 
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="city"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Ort</FormLabel>
+                  <FormControl>
+                    <Input 
+                      placeholder="z.B. Schwarzenbek" 
+                      {...field} 
+                      disabled={isProcessing} 
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+          
+          <div className="p-3 bg-blue-50 rounded-md border border-blue-100">
+            <p className="text-sm text-blue-700">
+              Diese Informationen werden verwendet, um Straßen in der richtigen Stadt zu finden.
+            </p>
+          </div>
+        </form>
+      </Form>
+
       <div className="flex space-x-3">
         <Button 
           onClick={processAddresses} 

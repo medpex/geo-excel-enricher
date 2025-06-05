@@ -4,7 +4,7 @@ interface GeocodingResult {
   longitude: number | null;
 }
 
-export const geocodeAddress = async (address: string): Promise<GeocodingResult> => {
+export const geocodeAddress = async (address: string, locationContext: string): Promise<GeocodingResult> => {
   const baseUrl = "https://nominatim.openstreetmap.org/search";
   
   // Normalisiere die Adresse
@@ -12,8 +12,8 @@ export const geocodeAddress = async (address: string): Promise<GeocodingResult> 
   cleanAddress = cleanAddress.replace(/\s+/g, ' ');
   cleanAddress = cleanAddress.replace(/strasse/gi, 'straße').replace(/Strasse/g, 'Straße');
   
-  // Füge Standardort hinzu (kann angepasst werden)
-  const searchAddress = `${cleanAddress}, Deutschland`;
+  // Füge PLZ und Stadt hinzu
+  const searchAddress = `${cleanAddress}, ${locationContext}, Deutschland`;
   
   const params = new URLSearchParams({
     q: searchAddress,
@@ -45,14 +45,14 @@ export const geocodeAddress = async (address: string): Promise<GeocodingResult> 
         longitude: parseFloat(result.lon)
       };
     } else {
-      console.warn(`Keine Ergebnisse für Adresse: ${address}`);
+      console.warn(`Keine Ergebnisse für Adresse: ${searchAddress}`);
       return {
         latitude: null,
         longitude: null
       };
     }
   } catch (error) {
-    console.error(`Fehler bei der Geocodierung von '${address}':`, error);
+    console.error(`Fehler bei der Geocodierung von '${searchAddress}':`, error);
     throw error;
   }
 };
@@ -89,3 +89,4 @@ export const validateAndNormalizeAddress = (address: string): string => {
   console.log(`Normalisierte Adresse: ${address}`);
   return address;
 };
+

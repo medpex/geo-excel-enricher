@@ -20,10 +20,19 @@ export interface GeocodedAddress extends Address {
   errorMessage?: string;
 }
 
+export interface LocationContext {
+  postalCode: string;
+  city: string;
+}
+
 const Index = () => {
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [geocodedAddresses, setGeocodedAddresses] = useState<GeocodedAddress[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [locationContext, setLocationContext] = useState<LocationContext>({
+    postalCode: '',
+    city: ''
+  });
 
   const handleFileUploaded = (parsedAddresses: Address[]) => {
     setAddresses(parsedAddresses);
@@ -37,6 +46,10 @@ const Index = () => {
 
   const handleStartProcessing = () => {
     setIsProcessing(true);
+  };
+
+  const updateLocationContext = (context: LocationContext) => {
+    setLocationContext(context);
   };
 
   return (
@@ -111,6 +124,8 @@ const Index = () => {
                   onProcessingComplete={handleProcessingComplete}
                   onStartProcessing={handleStartProcessing}
                   isProcessing={isProcessing}
+                  locationContext={locationContext}
+                  onLocationContextChange={updateLocationContext}
                 />
               ) : (
                 <div className="text-center py-8 text-gray-500">
