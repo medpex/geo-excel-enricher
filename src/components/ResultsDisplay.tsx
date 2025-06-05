@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -16,21 +15,17 @@ export const ResultsDisplay = ({ geocodedAddresses }: ResultsDisplayProps) => {
   const { toast } = useToast();
 
   const downloadCSV = () => {
-    const headers = ['Straße', 'Hausnummer', 'Zusatz', 'Vollständige Adresse', 'Latitude', 'Longitude', 'Status'];
+    const headers = ['Adresse', 'Latitude', 'Longitude'];
     const csvContent = [
-      headers.join(';'),
+      headers.join(','),
       ...geocodedAddresses.map(addr => [
-        addr.street,
-        addr.houseNumber,
-        addr.extra || '',
         addr.fullAddress,
         addr.latitude || '',
-        addr.longitude || '',
-        addr.status === 'success' ? 'Erfolgreich' : 'Fehler'
-      ].join(';'))
+        addr.longitude || ''
+      ].join(','))
     ].join('\n');
 
-    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
@@ -53,13 +48,9 @@ export const ResultsDisplay = ({ geocodedAddresses }: ResultsDisplayProps) => {
       
       const worksheet = XLSX.utils.json_to_sheet(
         geocodedAddresses.map(addr => ({
-          'Straße': addr.street,
-          'Hausnummer': addr.houseNumber,
-          'Zusatz': addr.extra || '',
-          'Vollständige Adresse': addr.fullAddress,
+          'Adresse': addr.fullAddress,
           'Latitude': addr.latitude || '',
-          'Longitude': addr.longitude || '',
-          'Status': addr.status === 'success' ? 'Erfolgreich' : 'Fehler'
+          'Longitude': addr.longitude || ''
         }))
       );
       
