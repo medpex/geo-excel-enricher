@@ -1,3 +1,4 @@
+
 # Welcome to your Lovable project
 
 ## Project info
@@ -50,6 +51,40 @@ npm run dev
 - Click on "New codespace" to launch a new Codespace environment.
 - Edit files directly within the Codespace and commit and push your changes once you're done.
 
+## Docker Deployment 🐳
+
+### Quick Start with Docker
+
+```bash
+# Pull and run the latest image
+docker run -p 3000:80 ghcr.io/yourusername/yourrepo:latest
+```
+
+### Using Docker Compose
+
+```bash
+# Clone the repository
+git clone <YOUR_GIT_URL>
+cd <YOUR_PROJECT_NAME>
+
+# Start with Docker Compose
+docker-compose up -d
+
+# Access the app at http://localhost:3000
+```
+
+### Building Locally
+
+```bash
+# Build the image
+docker build -t geocoding-app .
+
+# Run the container
+docker run -p 3000:80 geocoding-app
+```
+
+For detailed Docker deployment instructions, see [DOCKER.md](./DOCKER.md).
+
 ## What technologies are used for this project?
 
 This project is built with:
@@ -62,7 +97,20 @@ This project is built with:
 
 ## How can I deploy this project?
 
+**Lovable Hosting (Easiest)**
+
 Simply open [Lovable](https://lovable.dev/projects/368997ea-4193-48c8-b033-bd2fe1616e62) and click on Share -> Publish.
+
+**Docker Deployment (Recommended for Production)**
+
+This project includes complete Docker support for easy deployment:
+
+- **GitHub Container Registry**: Automatic builds on push
+- **Docker Compose**: One-command local deployment
+- **Production Ready**: Nginx, health checks, security headers
+- **Scalable**: Ready for load balancing and orchestration
+
+See [DOCKER.md](./DOCKER.md) for complete deployment guide.
 
 ## Can I connect a custom domain to my Lovable project?
 
